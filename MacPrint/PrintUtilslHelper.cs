@@ -18,7 +18,12 @@
 
         public void PrintWithAdobe(string filePath, string printername)
         {
-            PrinterHelper.PrintWithAdobe(filePath, printername);
+            PrinterHelper.PrintWithAdobe(filePath, printername, Logger);
+        }
+
+        public void PrintWithFoxit(string filePath, string printername)
+        {
+            PrinterHelper.PrintWithFoxit(filePath, printername, Logger);
         }
 
         public void PrintNoextentionFile(string filePath, bool isLandScape, string printerName, string sizeName, string fontSize,

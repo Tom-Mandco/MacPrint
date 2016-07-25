@@ -11,9 +11,11 @@ namespace Print
     using System.Diagnostics;
     using Microsoft.Win32;
     using System.Threading;
+    using PrintLogger;
 
     public static class PrinterHelper
     {
+
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
         public class DOCINFOA
         {
@@ -161,8 +163,8 @@ namespace Print
             }
             catch (Exception ex)
             {
-                throw ex;
                 
+                throw ex;
             }
         }
 
@@ -256,16 +258,16 @@ namespace Print
             return newString.ToString();
         }
 
-        public static void PrintWithAdobe(string filePath, string printername)
+        public static void PrintWithAdobe(string filePath, string printername, INLogger logger)
         {
             try
             {
-                string pdfArguments = string.Format(" /t "
+                string pdfArguments = string.Format(" /h /p "
                                                     + '"' + filePath + '"' + " "
                                                     + '"' + printername + '"'
                     );
-
-
+                
+            
                 string pdfPrinterLocation = @"C:\Program Files (x86)\Adobe\Reader 10.0\Reader\AcroRd32.exe";
 
                 var adobe =
@@ -298,6 +300,11 @@ namespace Print
                 {
                     pdfPrinterLocation = @"C:\Program Files (x86)\Adobe\Reader 11.0\Reader\AcroRd32.exe";
                 }
+
+                logger.Info(string.Format("pdfArugments: {0}{1}pdfPrinterLocation: {2}",
+                                            pdfArguments,
+                                            Environment.NewLine,
+                                            pdfPrinterLocation));
 
                 ProcessStartInfo newProcess = new ProcessStartInfo(pdfPrinterLocation, pdfArguments);
                 newProcess.CreateNoWindow = true;
@@ -337,14 +344,76 @@ namespace Print
             {
                 if (invalidOp.Message.Contains("process request"))
                 {
-                    // expected behaviour
+                    
                 }
-
+                logger.Error(invalidOp.Message);
+                logger.Error(invalidOp.StackTrace);
             }
             catch (Exception ex)
             {
+                logger.Error(ex.Message);
+                logger.Error(ex.StackTrace);
                 throw ex;
             }
+        }
+
+        public static void PrintWithFoxit(string filePath, string printername, INLogger logger)
+        {
+                string pdfArguments = string.Format(" /p "
+                                    + '"' + filePath + '"' + " "
+                                    + '"' + printername + '"');
+
+                string pdfPrinterLocation = @"C:\Program Files (x86)\Foxit Software\Foxit Reader\FoxitReader.exe";
+
+                var foxit =
+                    Registry.LocalMachine.OpenSubKey("Software")
+                    .OpenSubKey("Microsoft")
+                    .OpenSubKey("Windows")
+                    .OpenSubKey("CurrentVersion")
+                    .OpenSubKey("App Paths")
+                    .OpenSubKey("foxitreader.exe");
+                var path = foxit.GetValue("");
+
+                var foxitOtherWay =
+                    Registry.LocalMachine.OpenSubKey("Software")
+                    .OpenSubKey("Microsoft")
+                    .OpenSubKey("Windows")
+                    .OpenSubKey("CurrentVersion")
+                    .OpenSubKey("App Paths")
+                    .OpenSubKey("foxitreader.exe");
+                var pathOtherWay = foxitOtherWay.GetValue("");
+
+                if (!String.IsNullOrEmpty(path.ToString()))
+                {
+                    pdfPrinterLocation = path.ToString();
+                }
+                else if (!String.IsNullOrEmpty(pathOtherWay.ToString()))
+                {
+                    pdfPrinterLocation = pathOtherWay.ToString();
+                }
+
+                logger.Info(string.Format("pdfArugments: {0}{1}pdfPrinterLocation: {2}",
+                            pdfArguments,
+                            Environment.NewLine,
+                            pdfPrinterLocation));
+
+                ProcessStartInfo newProcess = new ProcessStartInfo(pdfPrinterLocation, pdfArguments);
+                newProcess.CreateNoWindow = true;
+                newProcess.RedirectStandardOutput = true;
+                newProcess.UseShellExecute = false;
+
+                Process pdfProcess = new Process();
+                pdfProcess.StartInfo = newProcess;
+                pdfProcess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                pdfProcess.Start();
+
+                FileInfo f = new FileInfo(filePath);
+                long s1 = f.Length / 1024;
+
+                int tSpan = (int)s1 * 20 + 10000;
+                Thread.Sleep(tSpan);
+
+                pdfProcess.Kill();
         }
 
         public static PaperSize getPaperSize(string sizeName)

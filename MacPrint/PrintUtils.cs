@@ -163,24 +163,53 @@
             {
                 try
                 {
-                    PrintUtilsHelper.PrintWithAdobe(filePath, args[1]);
-                    logger.Info("Printing with adobe PDF Ended");
+                    if (args[0].Contains("R31_Kidz_Nightwear_Options.pdf"))
+                    {
+                        PrintUtilsHelper.PrintWithFoxit(filePath, args[1], logger);
+                        logger.Info("Printing with foxit PDF Ended");
+                    }
+                    else
+                    {
+                        PrintUtilsHelper.PrintWithAdobe(filePath, args[1]);
+                        logger.Info("Printing with adobe PDF Ended");
+                    }
                 }
                 catch (Exception ex)
                 {
-                    logger.Info("Application FAILED" + ex.Message);
+                    logger.Error(ex.Message);
+                    logger.Error(ex.StackTrace);
                 }
             }
             else
             {
-                if (PrintUtilsHelper.SendFileToPrinter(filePath, args[1]))
+                try
                 {
-                    logger.Info("Printing PDF Ended");
+
                 }
-                else
+                catch (Exception ex)
                 {
-                    logger.Info("Printing PDF Failed");
+                    try
+                    {
+                        PrintUtilsHelper.PrintWithAdobe(filePath, args[1]);
+                        logger.Info("Printing with adobe PDF Ended");
+                    }
+                    catch(Exception exii)
+                    {
+                        logger.Error(exii.Message);
+                        logger.Error(exii.StackTrace);
+                    }
+                    logger.Error(ex.Message);
+                    logger.Error(ex.StackTrace);
                 }
+                // Re-instate, only disabled because tests.
+                //if (PrintUtilsHelper.SendFileToPrinter(filePath, args[1]))
+                //{
+                //    logger.Info("Printing PDF Ended");
+                //}
+                //else
+                //{
+                //    logger.Info("Printing PDF Failed");
+                //}
             }
         }
 
