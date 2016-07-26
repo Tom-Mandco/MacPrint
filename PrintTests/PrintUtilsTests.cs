@@ -3,11 +3,11 @@
     using Print;
     using Xunit;
     using Moq;
-    using PrintLogger;
+    using Macprint.Interfaces;
 
     public class PrintUtilsTests
     {
-        private readonly Mock<INLogger> mockLogger = new Mock<INLogger>();
+        private readonly Mock<ILog> mockLogger = new Mock<INLogger>();
         private readonly Mock<IPrintUtilsHelper> mockPrinterHelper = new Mock<IPrintUtilsHelper>();
         private PrintUtils PrintUtility { get; set; }
 

@@ -53,10 +53,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\PrintLogger\PrintLogger.csproj">
-      <Project>{7cd70a5a-f2cf-43bf-94e4-65e6a2ed5a20}</Project>
-      <Name>PrintLogger</Name>
-    </ProjectReference>
     <ProjectReference Include="..\MacPrint\MacPrint.csproj">
       <Project>{944703dd-d09f-4915-812b-aa604a8027a4}</Project>
       <Name>MacPrint</Name>

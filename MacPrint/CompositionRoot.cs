@@ -1,14 +1,20 @@
-﻿namespace Print
+﻿namespace MacPrint
 {
-    using PrintLogger;
+    using Ninject;
     using Ninject.Modules;
 
-    public class CompositionRoot : NinjectModule
+    public class CompositionRoot
     {
-        public override void Load()
+        private static IKernel _ninjectKernel;
+
+        public static void Wire(INinjectModule module)
         {
-            Bind<INLogger>().To<NLogger>();
-            Bind<IPrintUtilsHelper>().To<PrintUtilslHelper>();
+            _ninjectKernel = new StandardKernel(module);
+        }
+
+        public static T Resolve<T>()
+        {
+            return _ninjectKernel.Get<T>();
         }
     }
 }

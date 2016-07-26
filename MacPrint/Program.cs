@@ -1,7 +1,8 @@
-﻿namespace Print
+﻿namespace MacPrint
 {
     using Ninject;
-    using PrintLogger;
+    using Interfaces;
+    using Classes;
 
     class Program
     {
@@ -27,15 +28,11 @@
 
         static void Main(string[] args)
         {
-            var kernel = new StandardKernel();
-            kernel.Load(new CompositionRoot());
+            CompositionRoot.Wire(new ApplicationModule());
 
-            var logger = kernel.Get<INLogger>();
-            var printerHelper = kernel.Get<IPrintUtilsHelper>();
+            var printUtils = CompositionRoot.Resolve<IApp>();
 
-            var printUtils = new PrintUtils(logger, printerHelper, args);
-
-            printUtils.Print();
+            printUtils.Print(args);
         }
     }
 }
