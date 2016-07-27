@@ -20,6 +20,9 @@
         private static bool printBlankLines;
         private static bool endOfPage = false;
         private static string topLine = "tpt";
+        private int pageCount = 1;
+        private int startPage = 0;
+        private int endPage = 9999;
 
         public PrintHandler(ILog logger)
         {
@@ -60,18 +63,25 @@
         #endregion
 
         #region Printing Flat Files
-        public void PrintNoExtensionFile(string filePath, bool isLandScape, string printerName, string sizeName, string fontSize, string sourceName = "D", bool isDublex = false, bool pPrintBlankLines = false)
+        public void PrintNoExtensionFile(string filePath, bool isLandScape, string printerName, string sizeName, string fontSize, string sourceName = "D", bool isDublex = false, bool pPrintBlankLines = false, int pStartPage = 0, int pEndPage = 9999)
         {
             try
             {
                 streamToPrint = new StreamReader(filePath);
                 try
                 {
-                    printFont = new Font("Courier New", Convert.ToInt16(fontSize));
                     printBlankLines = pPrintBlankLines;
+                    startPage = pStartPage;
+                    endPage = pEndPage;
+
+                    printFont = new Font("Courier New", Convert.ToInt16(fontSize));
                     PrintDocument pd = new PrintDocument();
                     pd.PrintPage += new PrintPageEventHandler
-                       (this.pd_PrintPage);
+                        (this.pd_PrintPage);
+
+                    pd.PrinterSettings.PrintRange = PrintRange.SomePages;
+                    pd.PrinterSettings.FromPage = startPage;
+                    pd.PrinterSettings.ToPage = endPage;
 
                     pd.DocumentName = filePath.Substring(filePath.LastIndexOf('\\')+1);
 
@@ -80,7 +90,6 @@
                     else
                         pd.DefaultPageSettings.PrinterSettings.Duplex = Duplex.Simplex;
 
-                    
 
                     pd.DefaultPageSettings.PaperSize = getPaperSize(sizeName);
 
@@ -97,6 +106,13 @@
             }
         }
 
+        private void On_BeginPrint(object sender, PrintEventArgs e)
+        {
+            ((PrintDocument)sender).PrinterSettings.PrintRange = PrintRange.SomePages;
+            ((PrintDocument)sender).PrinterSettings.FromPage = startPage;
+            ((PrintDocument)sender).PrinterSettings.ToPage = endPage;
+        }
+
         private void pd_PrintPage(object sender, PrintPageEventArgs ev)
         {
             float linesPerPage = 0;
@@ -105,6 +121,11 @@
             float leftMargin = 0;
             float topMargin = -1;
             string line = null;
+
+            
+
+            logger.Info(string.Format("Holla atchya bwoi. its page {0}, mang.",
+                            pageCount));
 
             // Calculate the number of lines per page.
             linesPerPage = ev.MarginBounds.Height /
@@ -115,7 +136,8 @@
             if (topLine != "tpt")
             {
                 yPos = 0;
-                ev.Graphics.DrawString(topLine, printFont, Brushes.Black, leftMargin, yPos, new StringFormat());
+                if ((pageCount >= startPage) && (pageCount <= endPage))
+                    ev.Graphics.DrawString(topLine, printFont, Brushes.Black, leftMargin, yPos, new StringFormat());
                 count++;
                 topLine = "tpt";
             }
@@ -138,12 +160,17 @@
                 {
                     count = Convert.ToInt32(linesPerPage);
                     topLine = line;
+                    pageCount++;
                 }
                 else
                 {
                     if (printBlankLines || line != "")
                     {
-                        ev.Graphics.DrawString(line, printFont, Brushes.Black, leftMargin, yPos, new StringFormat());
+                        if ((pageCount >= startPage) && (pageCount <= endPage))
+                        {
+                            ev.Graphics.DrawString(line, printFont, Brushes.Black, leftMargin, yPos, new StringFormat());
+                            logger.Info(string.Format("Printing page: {0}", pageCount));
+                        }
                         count++;
                     }
                 }

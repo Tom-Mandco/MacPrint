@@ -61,7 +61,6 @@
     <Compile Include="Interfaces\ILog.cs" />
     <Compile Include="Interfaces\IPrintHandler.cs" />
     <Compile Include="Interfaces\IApp.cs" />
-    <Compile Include="Interfaces\IPrintUtilsHelper.cs" />
     <Compile Include="Classes\Log.cs" />
     <Compile Include="Classes\App.cs" />
     <Compile Include="Interfaces\IPurgeFiles.cs" />

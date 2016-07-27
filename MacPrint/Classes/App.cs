@@ -157,7 +157,6 @@
             logger.Info("Application Ended");
         }
 
-
         private void PrintPdf()
         {
             logger.Info("Printing PDF started");
@@ -201,7 +200,7 @@
             logger.Info("Printing Flat File started");
             bool printBlankLines = (argsLength > 7) && (printBlanks);
 
-            printHandler.PrintNoExtensionFile(filePath, isLandscape, printerPath, pageSize, fontSize.ToString(), source, isDuplex, printBlankLines);
+            printHandler.PrintNoExtensionFile(filePath, isLandscape, printerPath, pageSize, fontSize.ToString(), source, isDuplex, printBlankLines, startPage, endPage);
             
             logger.Info("Printing Flat File Ended");
         }
