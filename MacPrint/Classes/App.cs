@@ -51,9 +51,13 @@
                     case 1:
                         if (IsPdf(filePath))
                         {
-                            printerPath = args[1];
+                            if (args[1].Contains("\\"))
+                                printerPath = args[1];
+                            else
+                                printerPath = args[2];
+
                             sb.Clear();
-                            logger.Debug(sb.AppendFormat("Parameter 1 (printerPath): {0}", args[1]).ToString());
+                            logger.Debug(sb.AppendFormat("Parameter 1 (printerPath): {0}", printerPath).ToString());
                         }
                         else
                         {
@@ -65,7 +69,8 @@
                     case 2:
                         if (IsPdf(filePath))
                         {
-                            printWithAdobe = ArgIsTrue(args[2]);
+                            printWithAdobe = (args[2].Contains("\\") ? true : ArgIsTrue(args[2]));
+
                             sb.Clear();
                             logger.Debug(sb.AppendFormat("Parameter 2 (printWithAdobe): {0}", args[2]).ToString());
                         }
@@ -114,11 +119,13 @@
                         numeric = 0;
                         isNumeric = int.TryParse(args[8], out numeric);
                         startPage = numeric;
+                        logger.Debug(string.Format("Parameter 8 (startPage): {0}", startPage));
                         break;
                     case 9:
                         numeric = 9999;
                         isNumeric = int.TryParse(args[9], out numeric);
                         endPage = numeric;
+                        logger.Debug(string.Format("Parameter 9 (endPage): {0}", endPage));
                         break;
                 }
                 i++;
@@ -129,6 +136,7 @@
         #region Main Functions
         public void Print(string[] args)
         {
+            logger.Debug("MacPrint application started. Running Define Arguments.");
             DefineArguments(args);
             PurgeOldFiles();
 
@@ -154,45 +162,33 @@
                 logger.Error(ex.StackTrace);
             }
 
-            logger.Info("Application Ended");
+            logger.Info(string.Format("Application Ended{0}",
+                        Environment.NewLine));
         }
 
         private void PrintPdf()
         {
             logger.Info("Printing PDF started");
-            if (printWithAdobe)
+            try
             {
-                try
+                if (filePath.ToUpper().Contains("BATORD"))
                 {
-                    if (filePath.ToUpper().Contains("BATORD"))
-                    {
-                        printHandler.PrintWithFoxit(filePath, printerPath);
-                        logger.Info("Printing with foxit PDF Ended");
-                    }
-                    else
-                    {
-                        printHandler.PrintWithAdobe(filePath, printerPath);
-                        logger.Info("Printing with adobe PDF Ended");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.Error(ex.Message);
-                    logger.Error(ex.StackTrace);
-                }
-            }
-            else
-            {
-                if (printHandler.SendFileToPrinter(filePath, printerPath))
-                {
-                    logger.Info("Printing PDF Ended");
+                    printHandler.PrintWithFoxit(filePath, printerPath);
+                    logger.Info("Printing with foxit PDF Ended");
                 }
                 else
                 {
-                    logger.Info("Printing PDF Failed");
+                    printHandler.PrintWithAdobe(filePath, printerPath);
+                    logger.Info("Printing with adobe PDF Ended");
                 }
             }
+            catch (Exception ex)
+            {
+                logger.Error(ex.Message);
+                logger.Error(ex.StackTrace);
+            }
         }
+    
 
         private void PrintFlatFile(int argsLength, bool printBlanks)
         {

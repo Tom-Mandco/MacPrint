@@ -72,7 +72,7 @@
                 {
                     printBlankLines = pPrintBlankLines;
                     startPage = pStartPage;
-                    endPage = pEndPage;
+                    endPage = (pEndPage > 0) ? pEndPage : 9999;
 
                     printFont = new Font("Courier New", Convert.ToInt16(fontSize));
                     PrintDocument pd = new PrintDocument();
@@ -122,9 +122,7 @@
             float topMargin = -1;
             string line = null;
 
-            
-
-            logger.Info(string.Format("Holla atchya bwoi. its page {0}, mang.",
+            logger.Info(string.Format("Printing page {0} bruv.",
                             pageCount));
 
             // Calculate the number of lines per page.
@@ -169,7 +167,6 @@
                         if ((pageCount >= startPage) && (pageCount <= endPage))
                         {
                             ev.Graphics.DrawString(line, printFont, Brushes.Black, leftMargin, yPos, new StringFormat());
-                            logger.Info(string.Format("Printing page: {0}", pageCount));
                         }
                         count++;
                     }
@@ -355,38 +352,47 @@
         // When the function is given a printer name and an unmanaged array
         // of bytes, the function sends those bytes to the print queue.
         // Returns true on success, false on failure.
-        private static bool SendBytesToPrinter(string szPrinterName, IntPtr pBytes, Int32 dwCount)
+        private bool SendBytesToPrinter(string szPrinterName, IntPtr pBytes, Int32 dwCount)
         {
-            Int32 dwError = 0, dwWritten = 0;
-            IntPtr hPrinter = new IntPtr(0);
-            DOCINFOA di = new DOCINFOA();
             bool bSuccess = false; // Assume failure unless you specifically succeed.
 
-            di.pDocName = "My C#.NET RAW Document";
-            di.pDataType = "RAW";
+            try
+            {
+                Int32 dwError = 0, dwWritten = 0;
+                IntPtr hPrinter = new IntPtr(0);
+                DOCINFOA di = new DOCINFOA();
 
-            // Open the printer.
-            if (OpenPrinter(szPrinterName.Normalize(), out hPrinter, IntPtr.Zero))
-            {
-                // Start a document.
-                if (StartDocPrinter(hPrinter, 1, di))
+                di.pDocName = "My C#.NET RAW Document";
+                di.pDataType = "RAW";
+
+                // Open the printer.
+                if (OpenPrinter(szPrinterName.Normalize(), out hPrinter, IntPtr.Zero))
                 {
-                    // Start a page.
-                    if (StartPagePrinter(hPrinter))
+                    // Start a document.
+                    if (StartDocPrinter(hPrinter, 1, di))
                     {
-                        // Write your bytes.
-                        bSuccess = WritePrinter(hPrinter, pBytes, dwCount, out dwWritten);
-                        EndPagePrinter(hPrinter);
+                        // Start a page.
+                        if (StartPagePrinter(hPrinter))
+                        {
+                            // Write your bytes.
+                            bSuccess = WritePrinter(hPrinter, pBytes, dwCount, out dwWritten);
+                            EndPagePrinter(hPrinter);
+                        }
+                        EndDocPrinter(hPrinter);
                     }
-                    EndDocPrinter(hPrinter);
+                    ClosePrinter(hPrinter);
                 }
-                ClosePrinter(hPrinter);
+                // If you did not succeed, GetLastError may give more information
+                // about why not.
+                if (bSuccess == false)
+                {
+                    dwError = Marshal.GetLastWin32Error();
+                }
             }
-            // If you did not succeed, GetLastError may give more information
-            // about why not.
-            if (bSuccess == false)
+            catch(Exception ex)
             {
-                dwError = Marshal.GetLastWin32Error();
+                logger.Error(ex.Message);
+                logger.Error(ex.StackTrace);
             }
             return bSuccess;
         }
@@ -412,7 +418,7 @@
             // Copy the managed byte array into the unmanaged array.
             Marshal.Copy(bytes, 0, pUnmanagedBytes, nLength);
             // Send the unmanaged bytes to the printer.
-            bSuccess = MacPrint.Classes.PrintHandler.SendBytesToPrinter(szPrinterName, pUnmanagedBytes, nLength);
+            bSuccess = SendBytesToPrinter(szPrinterName, pUnmanagedBytes, nLength);
             // Free the unmanaged memory that you allocated earlier.
             Marshal.FreeCoTaskMem(pUnmanagedBytes);
             return bSuccess;
