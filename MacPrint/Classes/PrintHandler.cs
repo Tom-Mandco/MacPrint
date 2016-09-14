@@ -65,9 +65,14 @@
         #region Printing Flat Files
         public void PrintNoExtensionFile(string filePath, bool isLandScape, string printerName, string sizeName, string fontSize, string sourceName = "D", bool isDublex = false, bool pPrintBlankLines = false, int pStartPage = 0, int pEndPage = 9999)
         {
+            logger.Debug("PrintNoExtensionFile");
             try
             {
+                logger.Debug("Opening Stream '" + filePath + "'");
                 streamToPrint = new StreamReader(filePath);
+                logger.Debug("Stream opened");
+                FileInfo fileInfo = new FileInfo(filePath);
+                logger.Debug("Size of file: " + fileInfo.Length);
                 try
                 {
                     printBlankLines = pPrintBlankLines;
@@ -79,38 +84,45 @@
                     pd.PrintPage += new PrintPageEventHandler
                         (this.pd_PrintPage);
 
+                    pd.PrinterSettings.PrinterName = printerName;
                     pd.PrinterSettings.PrintRange = PrintRange.SomePages;
                     pd.PrinterSettings.FromPage = startPage;
                     pd.PrinterSettings.ToPage = endPage;
 
-                    pd.DocumentName = filePath.Substring(filePath.LastIndexOf('\\')+1);
+                    pd.DocumentName = filePath.Substring(filePath.LastIndexOf('\\') + 1);
 
                     if (isDublex)
-                        pd.DefaultPageSettings.PrinterSettings.Duplex = Duplex.Horizontal;
+                        if (isLandScape)
+                            pd.DefaultPageSettings.PrinterSettings.Duplex = Duplex.Horizontal;
+                        else
+                            pd.DefaultPageSettings.PrinterSettings.Duplex = Duplex.Vertical;
                     else
                         pd.DefaultPageSettings.PrinterSettings.Duplex = Duplex.Simplex;
 
+                    if (isLandScape)
+                        pd.DefaultPageSettings.Landscape = true;
 
                     pd.DefaultPageSettings.PaperSize = getPaperSize(sizeName);
 
                     pd.Print();
                 }
+                catch (Exception ex)
+                {
+                    logger.Error(ex.Message);
+                    logger.Error(ex.StackTrace);
+                }
                 finally
                 {
+                    logger.Debug("Closing and disposing stream");
                     streamToPrint.Close();
+                    streamToPrint.Dispose();
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+                logger.Error(ex.Message);
+                logger.Error(ex.StackTrace);
             }
-        }
-
-        private void On_BeginPrint(object sender, PrintEventArgs e)
-        {
-            ((PrintDocument)sender).PrinterSettings.PrintRange = PrintRange.SomePages;
-            ((PrintDocument)sender).PrinterSettings.FromPage = startPage;
-            ((PrintDocument)sender).PrinterSettings.ToPage = endPage;
         }
 
         private void pd_PrintPage(object sender, PrintPageEventArgs ev)
@@ -122,14 +134,19 @@
             float topMargin = -1;
             string line = null;
 
-            logger.Info(string.Format("Printing page {0} bruv.",
-                            pageCount));
+
 
             // Calculate the number of lines per page.
             linesPerPage = ev.MarginBounds.Height /
                printFont.GetHeight(ev.Graphics);
 
+            logger.Info(string.Format("Printing page {0} mig ven.",
+                            pageCount));
+
             linesPerPage += 11;
+
+            logger.Info(string.Format("Linjer pr side: {0}",
+                            linesPerPage));
 
             if (topLine != "tpt")
             {
@@ -187,7 +204,7 @@
         {
             try
             {
-                string pdfArguments = string.Format(" /h /p "
+                string pdfArguments = string.Format(" /t "
                                                     + '"' + filePath + '"' + " "
                                                     + '"' + printername + '"'
                     );
@@ -245,28 +262,7 @@
                 pdfProcess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                 pdfProcess.Start();
 
-                FileInfo f = new FileInfo(filePath);
-                long s1 = f.Length / 1024;
-
-
-                if (s1 < 100)
-                {
-                    Thread.Sleep(20000);
-                }
-                else if (s1 < 200)
-                {
-                    Thread.Sleep(30000);
-                }
-                else if (s1 < 300)
-                {
-                    Thread.Sleep(40000);
-                }
-                else
-                {
-                    int tSpan = (int)s1 * 100 + 10000;
-                    Thread.Sleep(tSpan);
-                }
-
+                Thread.Sleep(30000);
                 pdfProcess.Kill();
             }
             catch (InvalidOperationException invalidOp)
@@ -282,66 +278,23 @@
             }
         }
 
-        public void PrintWithFoxit(string filePath, string printername)
+        public void PrintWithDefaultPDFPrinter(string filePath, string printername)
         {
-            string pdfArguments = string.Format(" /p "
-                                + '"' + filePath + '"' + " "
-                                + '"' + printername + '"');
+            ProcessStartInfo info = new ProcessStartInfo();
+            info.Verb = "print";
+            info.Arguments = printername;
+            info.FileName = filePath;
+            info.CreateNoWindow = true;
+            info.WindowStyle = ProcessWindowStyle.Hidden;
 
-            string pdfPrinterLocation = @"C:\Program Files (x86)\Foxit Software\Foxit Reader\FoxitReader.exe";
+            Process p = new Process();
+            p.StartInfo = info;
+            p.Start();
 
-            var foxit =
-                Registry.LocalMachine.OpenSubKey("Software")
-                .OpenSubKey("Microsoft")
-                .OpenSubKey("Windows")
-                .OpenSubKey("CurrentVersion")
-                .OpenSubKey("App Paths")
-                .OpenSubKey("foxitreader.exe");
-            var path = foxit.GetValue("");
-
-            if (!String.IsNullOrEmpty(path.ToString()))
-            {
-                pdfPrinterLocation = path.ToString();
-            }
-            else
-            {
-                var foxitOtherWay =
-                    Registry.LocalMachine.OpenSubKey("Software")
-                    .OpenSubKey("Microsoft")
-                    .OpenSubKey("Windows")
-                    .OpenSubKey("CurrentVersion")
-                    .OpenSubKey("App Paths")
-                    .OpenSubKey("foxitreader.exe");
-                var pathOtherWay = foxitOtherWay.GetValue("");
-
-                if (!String.IsNullOrEmpty(pathOtherWay.ToString()))
-                {
-                    pdfPrinterLocation = pathOtherWay.ToString();
-                }
-            }
-
-            logger.Info(string.Format("pdfArugments: {0}{1}pdfPrinterLocation: {2}",
-                        pdfArguments,
-                        Environment.NewLine,
-                        pdfPrinterLocation));
-
-            ProcessStartInfo newProcess = new ProcessStartInfo(pdfPrinterLocation, pdfArguments);
-            newProcess.CreateNoWindow = true;
-            newProcess.RedirectStandardOutput = true;
-            newProcess.UseShellExecute = false;
-
-            Process pdfProcess = new Process();
-            pdfProcess.StartInfo = newProcess;
-            pdfProcess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            pdfProcess.Start();
-
-            FileInfo f = new FileInfo(filePath);
-            long s1 = f.Length / 1024;
-
-            int tSpan = (int)s1 * 20 + 10000;
-            Thread.Sleep(tSpan);
-
-            pdfProcess.Kill();
+            p.WaitForInputIdle();
+            System.Threading.Thread.Sleep(3000);
+            if (!p.CloseMainWindow())
+                p.Kill();
         }
         #endregion
 
@@ -389,7 +342,7 @@
                     dwError = Marshal.GetLastWin32Error();
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 logger.Error(ex.Message);
                 logger.Error(ex.StackTrace);
@@ -399,6 +352,7 @@
 
         public bool SendFileToPrinter(string szFileName, string szPrinterName)
         {
+            logger.Debug("SendFileToPrinter");
             // Open the file.
             FileStream fs = new FileStream(szFileName, FileMode.Open);
             // Create a BinaryReader on the file.

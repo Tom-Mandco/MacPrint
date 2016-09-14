@@ -44,6 +44,7 @@
                 {
                     case 0:
                         args[0] = args[0].TrimEnd(new char[] { '\r', '\n' });
+                        args[0] = args[0].Replace('/','\\');
                         filePath = args[0];
                         sb.Clear();
                         logger.Debug(sb.AppendFormat("Parameter 0 (FilePath): {0}", args[0]).ToString());
@@ -146,14 +147,16 @@
                 {
                     PrintPdf();
                 }
-                else if (IsLable(filePath))
+                else if (filePath.Contains("testfile"))
                 {
-                    logger.Info("This is a miricle that this works. check PrintUtils.cs Ln140.");
-                    printHandler.SendFileToPrinter(filePath.Replace(".lable", ""), printerPath);
+                    logger.Info("This is a miracle that this works. check PrintUtils.cs Ln140.");
+                    printHandler.SendFileToPrinter(filePath, printerPath);
                 }
                 else
                 {
-                    PrintFlatFile(args.Length, ArgIsTrue(args[7]));
+                    if (printBlankLines == null)
+                        printBlankLines = false;
+                    PrintFlatFile(args.Length, printBlankLines);
                 }
             }
             catch (Exception ex)
@@ -171,16 +174,8 @@
             logger.Info("Printing PDF started");
             try
             {
-                if (filePath.ToUpper().Contains("BATORD"))
-                {
-                    printHandler.PrintWithFoxit(filePath, printerPath);
-                    logger.Info("Printing with foxit PDF Ended");
-                }
-                else
-                {
-                    printHandler.PrintWithAdobe(filePath, printerPath);
-                    logger.Info("Printing with adobe PDF Ended");
-                }
+                printHandler.PrintWithAdobe(filePath, printerPath);
+                logger.Info("Printing with adobe PDF Ended");
             }
             catch (Exception ex)
             {
