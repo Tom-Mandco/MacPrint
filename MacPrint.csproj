@@ -44,6 +44,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
@@ -55,9 +56,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ApplicationModule.cs" />
+    <Compile Include="Classes\EmailSender.cs" />
     <Compile Include="Classes\PrintHandler.cs" />
     <Compile Include="Classes\PurgeFiles.cs" />
     <Compile Include="CompositionRoot.cs" />
+    <Compile Include="Interfaces\IEmailSender.cs" />
     <Compile Include="Interfaces\ILog.cs" />
     <Compile Include="Interfaces\IPrintHandler.cs" />
     <Compile Include="Interfaces\IApp.cs" />
